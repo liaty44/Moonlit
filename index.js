@@ -2,7 +2,7 @@ const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const { joinVoiceChannel } = require('@discordjs/voice');
 const express = require('express');
 
-// 🌐 Express server to satisfy Render's web service port requirement
+// 🌐 Express server for Render web service port binding
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -28,8 +28,11 @@ const client = new Client({
 const PREFIX = '.';
 const afkUsers = new Map(); // Stores userId -> { reason, time }
 
-// List of prohibited words for auto-moderation
-const badWords = ['fuc', 'f@uc', 'abuse1', 'abuse2']; 
+// 🧠 Smart Prohibited Words & Patterns List (Handles full, short, and symbol variations)
+const badWords = [
+  'fuc', 'f@uc', 'fuk', 'porn', 'prn', 'mother', 'mothafuck', 'bitch', 'btch', 
+  'sex', 's3x', 'abuse', 'harass'
+];
 
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
@@ -66,33 +69,42 @@ client.on('messageCreate', async message => {
     }
   });
 
-  // 3️⃣ Auto-Moderation (Abuse & Harassment Filter)
-  const lowerContent = message.content.toLowerCase();
-  const containsBadWord = badWords.some(word => lowerContent.includes(word));
+  // 3️⃣ Smart Auto-Moderation (AI-like text cleaning & detection)
+  if (message.guild) {
+    // Clean text: lowercase, remove symbols/spaces to catch hidden spellings (e.g. f@uc -> fauc)
+    const rawContent = message.content.toLowerCase();
+    const cleanedContent = rawContent.replace(/[^a-z0-9]/g, ''); 
 
-  if (containsBadWord && message.guild) {
-    try {
-      await message.delete();
-      
-      const warnEmbed = new EmbedBuilder()
-        .setColor('#FF0000')
-        .setTitle('⚠️ Auto-Mod Warning')
-        .setDescription(`${message.author}, your message was deleted for harassment or prohibited words.`);
-      
-      await message.channel.send({ embeds: [warnEmbed] });
-      
-      if (message.member && message.member.moderatable) {
-        await message.member.timeout(10 * 60 * 1000, 'Harassment / Prohibited words');
+    const isAbusive = badWords.some(word => {
+      const cleanWord = word.toLowerCase().replace(/[^a-z0-9]/g, '');
+      return rawContent.includes(word) || cleanedContent.includes(cleanWord);
+    });
+
+    if (isAbusive) {
+      try {
+        await message.delete();
         
-        try {
-          await message.author.send(`⚠️ You have been timed out for 10 minutes in **${message.guild.name}** for using prohibited words.`);
-        } catch (dmErr) {
-          console.log('Could not send DM to user.');
+        const warnEmbed = new EmbedBuilder()
+          .setColor('#FF0000')
+          .setTitle('⚠️ Auto-Mod Warning')
+          .setDescription(`${message.author}, your message was deleted for harassment or prohibited words.`);
+        
+        await message.channel.send({ embeds: [warnEmbed] });
+        
+        // Apply 10-minute timeout if bot has permissions
+        if (message.member && message.member.moderatable) {
+          await message.member.timeout(10 * 60 * 1000, 'Harassment / Prohibited words');
+          
+          try {
+            await message.author.send(`⚠️ You have been timed out for 10 minutes in **${message.guild.name}** for using prohibited words.`);
+          } catch (dmErr) {
+            console.log('Could not send DM to user.');
+          }
         }
+        return;
+      } catch (err) {
+        console.log('Auto-mod error (Check bot permissions / Role hierarchy):', err);
       }
-      return;
-    } catch (err) {
-      console.log('Auto-mod error (Check bot permissions / Role hierarchy):', err);
     }
   }
 
@@ -106,7 +118,7 @@ client.on('messageCreate', async message => {
   if (command === 'help') {
     const embed = new EmbedBuilder()
       .setColor('#5865F2')
-      .setTitle('✨ MOONLIT CAFE [CORE]')
+      .setTitle('✨ Premium Bot Help Menu')
       .setDescription('Here are your available commands:')
       .addFields(
         { name: '🛠️ `.help`', value: 'Displays this command panel', inline: true },
