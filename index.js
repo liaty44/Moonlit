@@ -1,7 +1,6 @@
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const { joinVoiceChannel } = require('@discordjs/voice');
 const express = require('express');
-const OpenAI = require('openai');
 
 // 🌐 Express server for Render web service port binding
 const app = express();
@@ -14,9 +13,6 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Web server listening on port ${PORT}`);
 });
-
-// 🤖 OpenAI Setup for Smart AI Moderation
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // 🤖 Discord Bot Setup with required gateway intents
 const client = new Client({
@@ -31,7 +27,13 @@ const client = new Client({
 
 const PREFIX = '.';
 const afkUsers = new Map(); // Stores userId -> { reason, time }
-const userWarnings = new Map(); // Stores userId -> warning count for auto-mod
+
+// 🛡️ Comprehensive Toxic & Prohibited Words List (handles variations and bypasses)
+const badWords = [
+  'fuc', 'fuk', 'f@ck', 'fxxk', 'bitch', 'btch', 'bc', 'mc', 'madarchod', 'behenchod',
+  'bhosdike', 'gand', 'gandu', 'lauda', 'lund', 'choot', 'chutiya', 'randi', 'porn',
+  'sex', 's3x', 'abuse', 'harass', 'killyourself', 'suicide', 'suck', 'etc'
+];
 
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
@@ -54,7 +56,7 @@ client.on('messageCreate', async message => {
     if (afkUsers.has(user.id)) {
       const afkData = afkUsers.get(user.id);
       const timeAgo = Math.floor((Date.now() - afkData.time) / 60000); // minutes
-      const tickEmoji = '<:tick:995734>'; // Custom Discord emoji format
+      const tickEmoji = '<:tick:995734>';
       
       const afkEmbed = new EmbedBuilder()
         .setColor('#FFA500')
@@ -68,48 +70,48 @@ client.on('messageCreate', async message => {
     }
   });
 
-  // 3️⃣ AI Smart Auto-Moderation (OpenAI Moderation API)
+  // 3️⃣ Local Smart Auto-Moderation System
   if (message.guild) {
-    try {
-      const moderation = await openai.moderations.create({
-        input: message.content,
-      });
+    const rawContent = message.content.toLowerCase();
+    const cleanedContent = rawContent.replace(/[^a-z0-9]/g, '');
 
-      const results = moderation.results[0];
+    const isAbusive = badWords.some(word => {
+      const cleanWord = word.toLowerCase().replace(/[^a-z0-9]/g, '');
+      return rawContent.includes(word) || cleanedContent.includes(cleanWord);
+    });
 
-      if (results.flagged) {
+    if (isAbusive) {
+      try {
         await message.delete();
 
-        // Track user offenses
-        let warnings = userWarnings.get(message.author.id) || 0;
-        warnings += 1;
-        userWarnings.set(message.author.id, warnings);
+        // ⚠️ Channel Warning Embed
+        const warnEmbed = new EmbedBuilder()
+          .setColor('#FF0000')
+          .setTitle('⚠️ Auto-Mod Warning')
+          .setDescription(`${message.author}, your message was deleted for prohibited or toxic content.`);
+        
+        await message.channel.send({ embeds: [warnEmbed] });
 
-        if (warnings === 1) {
-          // 1st Offense: Warning
-          const warnEmbed = new EmbedBuilder()
+        // 📩 DM Notification to User with Reason & Timeout Info
+        try {
+          const dmEmbed = new EmbedBuilder()
             .setColor('#FF0000')
-            .setTitle('⚠️ Auto-Mod Warning (1/2)')
-            .setDescription(`${message.author}, your message was flagged for inappropriate content. Next time you will be timed out.`);
+            .setTitle('🚨 Moderation Action Notice')
+            .setDescription(`You have been timed out for **10 minutes** in **${message.guild.name}**.\n\n**Reason:** Use of prohibited/toxic words.\n**Duration:** 10 Minutes`);
           
-          await message.channel.send({ embeds: [warnEmbed] });
-        } else if (warnings >= 2) {
-          // 2nd Offense & above: Timeout
-          const timeoutEmbed = new EmbedBuilder()
-            .setColor('#FF0000')
-            .setTitle('⏱️ Auto-Mod Timeout (2/2)')
-            .setDescription(`${message.author}, you have been timed out for 10 minutes due to repeated inappropriate messages.`);
-          
-          await message.channel.send({ embeds: [timeoutEmbed] });
+          await message.author.send({ embeds: [dmEmbed] });
+        } catch (dmErr) {
+          console.log('Could not send DM to user.');
+        }
 
-          if (message.member && message.member.moderatable) {
-            await message.member.timeout(10 * 60 * 1000, 'Repeated inappropriate content / Abuse');
-          }
+        // ⏱️ Apply 10-Minute Timeout
+        if (message.member && message.member.moderatable) {
+          await message.member.timeout(10 * 60 * 1000, 'Prohibited / Toxic words violation');
         }
         return;
+      } catch (err) {
+        console.log('Auto-mod error:', err);
       }
-    } catch (err) {
-      console.error('OpenAI moderation error:', err);
     }
   }
 
@@ -140,7 +142,7 @@ client.on('messageCreate', async message => {
     const reason = args.join(' ') || 'AFK';
     afkUsers.set(message.author.id, { reason, time: Date.now() });
 
-    const tickEmoji = '<:tick:995734>'; // Custom Discord emoji format
+    const tickEmoji = '<:tick:995734>';
     const afkSetEmbed = new EmbedBuilder()
       .setColor('#5865F2')
       .setDescription(`💤 ${tickEmoji} **${message.author.username}**, I have set your AFK: **${reason}**`);
