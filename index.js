@@ -1,7 +1,8 @@
-const { Client, GatewayIntentBits, EmbedBuilder, PermissionsBitField } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+const { joinVoiceChannel } = require('@discordjs/voice');
 const express = require('express');
 
-// 🌐 Express server for Render web service port binding
+// 🌐 Express server to satisfy Render's web service port requirement
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -13,7 +14,7 @@ app.listen(PORT, () => {
   console.log(`Web server listening on port ${PORT}`);
 });
 
-// 🤖 Discord Bot Setup with required intents
+// 🤖 Discord Bot Setup with required gateway intents
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -26,7 +27,9 @@ const client = new Client({
 
 const PREFIX = '.';
 const afkUsers = new Map(); // Stores userId -> { reason, time }
-const badWords = ['fuc', 'f@uc', 'abuse1', 'abuse2']; // Add words you want to filter
+
+// List of prohibited words for auto-moderation
+const badWords = ['fuc', 'f@uc', 'abuse1', 'abuse2']; 
 
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
@@ -49,10 +52,12 @@ client.on('messageCreate', async message => {
     if (afkUsers.has(user.id)) {
       const afkData = afkUsers.get(user.id);
       const timeAgo = Math.floor((Date.now() - afkData.time) / 60000); // minutes
+      const tickEmoji = '<:tick:995734>'; // Custom Discord emoji format
+      
       const afkEmbed = new EmbedBuilder()
         .setColor('#FFA500')
         .setTitle('💤 User is currently AFK')
-        .setDescription(`**${user.username}** is away.`)
+        .setDescription(`${tickEmoji} **${user.username}** is away.`)
         .addFields(
           { name: 'Reason', value: afkData.reason || 'No reason provided', inline: true },
           { name: 'Away For', value: `${timeAgo} minutes`, inline: true }
@@ -61,7 +66,7 @@ client.on('messageCreate', async message => {
     }
   });
 
-  // 3️⃣ Auto-Moderation (Bad Words / Abuse)
+  // 3️⃣ Auto-Moderation (Abuse & Harassment Filter)
   const lowerContent = message.content.toLowerCase();
   const containsBadWord = badWords.some(word => lowerContent.includes(word));
 
@@ -69,20 +74,16 @@ client.on('messageCreate', async message => {
     try {
       await message.delete();
       
-      // Warn in channel
       const warnEmbed = new EmbedBuilder()
         .setColor('#FF0000')
         .setTitle('⚠️ Auto-Mod Warning')
-        .setDescription(`${message.author}, your message was deleted for violating chat rules.`);
+        .setDescription(`${message.author}, your message was deleted for harassment or prohibited words.`);
       
-      const sentMsg = await message.channel.send({ embeds: [warnEmbed] });
+      await message.channel.send({ embeds: [warnEmbed] });
       
-      // Try to timeout if member persists or on first strike depending on config
-      // Here we apply timeout directly as requested if harassment is detected
       if (message.member && message.member.moderatable) {
         await message.member.timeout(10 * 60 * 1000, 'Harassment / Prohibited words');
         
-        // Notify via DM
         try {
           await message.author.send(`⚠️ You have been timed out for 10 minutes in **${message.guild.name}** for using prohibited words.`);
         } catch (dmErr) {
@@ -91,7 +92,7 @@ client.on('messageCreate', async message => {
       }
       return;
     } catch (err) {
-      console.log('Auto-mod error:', err);
+      console.log('Auto-mod error (Check bot permissions / Role hierarchy):', err);
     }
   }
 
@@ -105,14 +106,14 @@ client.on('messageCreate', async message => {
   if (command === 'help') {
     const embed = new EmbedBuilder()
       .setColor('#5865F2')
-      .setTitle('✨ Premium Bot Help Menu')
+      .setTitle('✨ MOONLIT CAFE [CORE]')
       .setDescription('Here are your available commands:')
       .addFields(
         { name: '🛠️ `.help`', value: 'Displays this command panel', inline: true },
         { name: '💤 `.afk [reason]`', value: 'Sets your custom AFK status', inline: true },
-        { name: '🖼️ `.av [@user]`', value: 'Shows user avatar in high quality', inline: true }
-      )
-      .setFooter({ text: 'Powered by 24/7 Render Hosting' });
+        { name: '🖼️ `.av [@user]`', value: 'Shows user avatar in high quality', inline: true },
+        { name: '🔊 `.vc`', value: 'Connects bot to your voice channel for 24/7 presence', inline: true }
+      );
     
     return message.reply({ embeds: [embed] }).catch(() => {});
   }
@@ -122,9 +123,10 @@ client.on('messageCreate', async message => {
     const reason = args.join(' ') || 'AFK';
     afkUsers.set(message.author.id, { reason, time: Date.now() });
 
+    const tickEmoji = '<:tick:995734>'; // Custom Discord emoji format
     const afkSetEmbed = new EmbedBuilder()
       .setColor('#5865F2')
-      .setDescription(`💤 **${message.author.username}**, I have set your AFK: **${reason}**`);
+      .setDescription(`💤 ${tickEmoji} **${message.author.username}**, I have set your AFK: **${reason}**`);
     
     return message.reply({ embeds: [afkSetEmbed] }).catch(() => {});
   }
@@ -138,6 +140,33 @@ client.on('messageCreate', async message => {
       .setImage(target.displayAvatarURL({ size: 1024, dynamic: true }));
 
     return message.reply({ embeds: [avEmbed] }).catch(() => {});
+  }
+
+  // 🔊 .vc Command (24/7 Voice Channel Connection)
+  if (command === 'vc') {
+    const channel = message.member?.voice.channel;
+
+    if (!channel) {
+      return message.reply('❌ You need to be in a voice channel first to use `.vc`!').catch(() => {});
+    }
+
+    try {
+      joinVoiceChannel({
+        channelId: channel.id,
+        guildId: message.guild.id,
+        adapterCreator: message.guild.voiceAdapterCreator,
+        selfDeaf: false
+      });
+
+      const vcEmbed = new EmbedBuilder()
+        .setColor('#00FF00')
+        .setDescription(`🔊 Successfully joined **${channel.name}** and staying connected 24/7!`);
+      
+      return message.reply({ embeds: [vcEmbed] }).catch(() => {});
+    } catch (err) {
+      console.error('VC connection error:', err);
+      return message.reply('❌ Failed to join the voice channel. Make sure I have permission to connect!').catch(() => {});
+    }
   }
 });
 
