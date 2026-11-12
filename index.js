@@ -28,11 +28,10 @@ const client = new Client({
 const PREFIX = '.';
 const afkUsers = new Map(); // Stores userId -> { reason, time }
 
-// 🛡️ Comprehensive Toxic & Prohibited Words List (handles variations and bypasses)
+// 🛡️ Strict Bad Words List (Only core abuses and gaaliyan - emojis and normal chat are safe)
 const badWords = [
-  'fuc', 'fuk', 'f@ck', 'fxxk', 'bitch', 'btch', 'bc', 'mc', 'madarchod', 'behenchod',
-  'bhosdike', 'gand', 'gandu', 'lauda', 'lund', 'choot', 'chutiya', 'randi', 'porn',
-  'sex', 's3x', 'abuse', 'harass', 'killyourself', 'suicide', 'suck', 'etc'
+  'madarchod', 'behenchod', 'bhosdike', 'chutiya', 'randi', 'gandu', 
+  'lauda', 'lund', 'choot', 'mc', 'bc'
 ];
 
 client.once('ready', () => {
@@ -56,12 +55,11 @@ client.on('messageCreate', async message => {
     if (afkUsers.has(user.id)) {
       const afkData = afkUsers.get(user.id);
       const timeAgo = Math.floor((Date.now() - afkData.time) / 60000); // minutes
-      const tickEmoji = '<:tick:995734>';
       
       const afkEmbed = new EmbedBuilder()
         .setColor('#FFA500')
         .setTitle('💤 User is currently AFK')
-        .setDescription(`${tickEmoji} **${user.username}** is away.`)
+        .setDescription(`💤 **${user.username}** is away.`)
         .addFields(
           { name: 'Reason', value: afkData.reason || 'No reason provided', inline: true },
           { name: 'Away For', value: `${timeAgo} minutes`, inline: true }
@@ -70,15 +68,12 @@ client.on('messageCreate', async message => {
     }
   });
 
-  // 3️⃣ Local Smart Auto-Moderation System
+  // 3️⃣ Precise Auto-Moderation (Only triggers on exact bad words, ignores emojis & normal chat)
   if (message.guild) {
-    const rawContent = message.content.toLowerCase();
-    const cleanedContent = rawContent.replace(/[^a-z0-9]/g, '');
-
-    const isAbusive = badWords.some(word => {
-      const cleanWord = word.toLowerCase().replace(/[^a-z0-9]/g, '');
-      return rawContent.includes(word) || cleanedContent.includes(cleanWord);
-    });
+    const wordsInMessage = message.content.toLowerCase().split(/\s+/);
+    
+    // Check if any word in the message matches the strict bad words list
+    const isAbusive = wordsInMessage.some(word => badWords.includes(word));
 
     if (isAbusive) {
       try {
@@ -88,7 +83,7 @@ client.on('messageCreate', async message => {
         const warnEmbed = new EmbedBuilder()
           .setColor('#FF0000')
           .setTitle('⚠️ Auto-Mod Warning')
-          .setDescription(`${message.author}, your message was deleted for prohibited or toxic content.`);
+          .setDescription(`${message.author}, your message was deleted because it contained prohibited abusive words.`);
         
         await message.channel.send({ embeds: [warnEmbed] });
 
@@ -97,7 +92,7 @@ client.on('messageCreate', async message => {
           const dmEmbed = new EmbedBuilder()
             .setColor('#FF0000')
             .setTitle('🚨 Moderation Action Notice')
-            .setDescription(`You have been timed out for **10 minutes** in **${message.guild.name}**.\n\n**Reason:** Use of prohibited/toxic words.\n**Duration:** 10 Minutes`);
+            .setDescription(`You have been timed out for **10 minutes** in **${message.guild.name}**.\n\n**Reason:** Using prohibited abusive words.\n**Duration:** 10 Minutes`);
           
           await message.author.send({ embeds: [dmEmbed] });
         } catch (dmErr) {
@@ -106,7 +101,7 @@ client.on('messageCreate', async message => {
 
         // ⏱️ Apply 10-Minute Timeout
         if (message.member && message.member.moderatable) {
-          await message.member.timeout(10 * 60 * 1000, 'Prohibited / Toxic words violation');
+          await message.member.timeout(10 * 60 * 1000, 'Prohibited abusive words violation');
         }
         return;
       } catch (err) {
@@ -125,7 +120,7 @@ client.on('messageCreate', async message => {
   if (command === 'help') {
     const embed = new EmbedBuilder()
       .setColor('#5865F2')
-      .setTitle('✨ Premium Bot Help Menu')
+      .setTitle('✨ Bot Help Menu')
       .setDescription('Here are your available commands:')
       .addFields(
         { name: '🛠️ `.help`', value: 'Displays this command panel', inline: true },
@@ -142,10 +137,9 @@ client.on('messageCreate', async message => {
     const reason = args.join(' ') || 'AFK';
     afkUsers.set(message.author.id, { reason, time: Date.now() });
 
-    const tickEmoji = '<:tick:995734>';
     const afkSetEmbed = new EmbedBuilder()
       .setColor('#5865F2')
-      .setDescription(`💤 ${tickEmoji} **${message.author.username}**, I have set your AFK: **${reason}**`);
+      .setDescription(`💤 **${message.author.username}**, I have set your AFK: **${reason}**`);
     
     return message.reply({ embeds: [afkSetEmbed] }).catch(() => {});
   }
