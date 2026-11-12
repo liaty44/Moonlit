@@ -1,6 +1,7 @@
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const { joinVoiceChannel } = require('@discordjs/voice');
 const express = require('express');
+const OpenAI = require('openai');
 
 // 🌐 Express server for Render web service port binding
 const app = express();
@@ -13,6 +14,9 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Web server listening on port ${PORT}`);
 });
+
+// 🤖 OpenAI Setup for Smart AI Moderation
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // 🤖 Discord Bot Setup with required gateway intents
 const client = new Client({
@@ -27,12 +31,7 @@ const client = new Client({
 
 const PREFIX = '.';
 const afkUsers = new Map(); // Stores userId -> { reason, time }
-
-// 🧠 Smart Prohibited Words & Patterns List (Handles full, short, and symbol variations)
-const badWords = [
-  'fuc', 'f@uc', 'fuk', 'porn', 'prn', 'mother', 'mothafuck', 'bitch', 'btch', 
-  'sex', 's3x', 'abuse', 'harass'
-];
+const userWarnings = new Map(); // Stores userId -> warning count for auto-mod
 
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
@@ -69,42 +68,48 @@ client.on('messageCreate', async message => {
     }
   });
 
-  // 3️⃣ Smart Auto-Moderation (AI-like text cleaning & detection)
+  // 3️⃣ AI Smart Auto-Moderation (OpenAI Moderation API)
   if (message.guild) {
-    // Clean text: lowercase, remove symbols/spaces to catch hidden spellings (e.g. f@uc -> fauc)
-    const rawContent = message.content.toLowerCase();
-    const cleanedContent = rawContent.replace(/[^a-z0-9]/g, ''); 
+    try {
+      const moderation = await openai.moderations.create({
+        input: message.content,
+      });
 
-    const isAbusive = badWords.some(word => {
-      const cleanWord = word.toLowerCase().replace(/[^a-z0-9]/g, '');
-      return rawContent.includes(word) || cleanedContent.includes(cleanWord);
-    });
+      const results = moderation.results[0];
 
-    if (isAbusive) {
-      try {
+      if (results.flagged) {
         await message.delete();
-        
-        const warnEmbed = new EmbedBuilder()
-          .setColor('#FF0000')
-          .setTitle('⚠️ Auto-Mod Warning')
-          .setDescription(`${message.author}, your message was deleted for harassment or prohibited words.`);
-        
-        await message.channel.send({ embeds: [warnEmbed] });
-        
-        // Apply 10-minute timeout if bot has permissions
-        if (message.member && message.member.moderatable) {
-          await message.member.timeout(10 * 60 * 1000, 'Harassment / Prohibited words');
+
+        // Track user offenses
+        let warnings = userWarnings.get(message.author.id) || 0;
+        warnings += 1;
+        userWarnings.set(message.author.id, warnings);
+
+        if (warnings === 1) {
+          // 1st Offense: Warning
+          const warnEmbed = new EmbedBuilder()
+            .setColor('#FF0000')
+            .setTitle('⚠️ Auto-Mod Warning (1/2)')
+            .setDescription(`${message.author}, your message was flagged for inappropriate content. Next time you will be timed out.`);
           
-          try {
-            await message.author.send(`⚠️ You have been timed out for 10 minutes in **${message.guild.name}** for using prohibited words.`);
-          } catch (dmErr) {
-            console.log('Could not send DM to user.');
+          await message.channel.send({ embeds: [warnEmbed] });
+        } else if (warnings >= 2) {
+          // 2nd Offense & above: Timeout
+          const timeoutEmbed = new EmbedBuilder()
+            .setColor('#FF0000')
+            .setTitle('⏱️ Auto-Mod Timeout (2/2)')
+            .setDescription(`${message.author}, you have been timed out for 10 minutes due to repeated inappropriate messages.`);
+          
+          await message.channel.send({ embeds: [timeoutEmbed] });
+
+          if (message.member && message.member.moderatable) {
+            await message.member.timeout(10 * 60 * 1000, 'Repeated inappropriate content / Abuse');
           }
         }
         return;
-      } catch (err) {
-        console.log('Auto-mod error (Check bot permissions / Role hierarchy):', err);
       }
+    } catch (err) {
+      console.error('OpenAI moderation error:', err);
     }
   }
 
