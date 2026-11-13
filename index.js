@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, EmbedBuilder, PermissionsBitField } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, PermissionsBitField, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
 const { joinVoiceChannel } = require('@discordjs/voice');
 const express = require('express');
 
@@ -30,10 +30,11 @@ const afkUsers = new Map();      // Stores userId -> { reason, time }
 const cooldowns = new Map();   // 3s Command Cooldown Map
 const snipedMessages = new Map(); // Stores deleted messages for .snipe
 
-// 🛡️ Strict Bad Words List (Only core abuses and gaaliyan)
+// 🛡️ Comprehensive Abusive & Toxic Words List
 const badWords = [
   'madarchod', 'behenchod', 'bhosdike', 'chutiya', 'randi', 'gandu', 
-  'lauda', 'lund', 'choot', 'mc', 'bc'
+  'lauda', 'lund', 'choot', 'mc', 'bc', 'nigga', 'nigger', 'bastard', 
+  'slut', 'whore', 'asshole', 'dick', 'pussy', 'faggot', 'fuck', 'f', 'tmkc', 'xxx', 'sex', 'sexy', 'nig', 'bitch'
 ];
 
 client.once('ready', () => {
@@ -54,7 +55,7 @@ client.on('messageDelete', message => {
 client.on('messageCreate', async message => {
   if (message.author.bot) return;
 
-  // 1️⃣ AFK Instant Return Check (Jaise hi user message karega, AFK hat jayega)
+  // 1️⃣ AFK Instant Return Check
   if (afkUsers.has(message.author.id)) {
     afkUsers.delete(message.author.id);
     const returnEmbed = new EmbedBuilder()
@@ -98,7 +99,7 @@ client.on('messageCreate', async message => {
     }
   });
 
-  // 3️⃣ Precise Auto-Moderation (Ignores emojis/normal chat, catches only abuses)
+  // 3️⃣ Precise Auto-Moderation (Catches abuses, ignores emojis and normal chat)
   if (message.guild) {
     const wordsInMessage = message.content.toLowerCase().split(/\s+/);
     const isAbusive = wordsInMessage.some(word => badWords.includes(word));
@@ -170,7 +171,7 @@ client.on('messageCreate', async message => {
         { name: '🖼️ `.av [@user]`', value: 'Shows user avatar in high quality', inline: true },
         { name: '🔊 `.vc`', value: 'Connects bot to VC (Admin Only)', inline: true },
         { name: '⏱️ `.t [@user] [min] [reason]`', value: 'Timeout user (Admin Only)', inline: true },
-        { name: '🌟 `.premium`', value: 'Displays bot premium features', inline: true },
+        { name: '🌟 `.premium`', value: 'Interactive premium menu dropdown', inline: true },
         { name: '📊 `.poll [question]`', value: 'Creates an interactive server poll', inline: true },
         { name: '🎯 `.snipe`', value: 'Recovers the last deleted message', inline: true },
         { name: '🏰 `.serverinfo`', value: 'Shows detailed server info', inline: true }
@@ -262,19 +263,61 @@ client.on('messageCreate', async message => {
     }
   }
 
-  // 🌟 .premium Command
+  // 🌟 .premium Command with Dropdown Menu Design
   if (command === 'premium') {
+    const row = new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('premium_menu')
+        .setPlaceholder('✨ Select a Premium Feature')
+        .addOptions([
+          {
+            label: '24/7 Cloud Hosting',
+            description: 'High-speed priority infrastructure uptime.',
+            value: 'hosting',
+            emoji: '🚀'
+          },
+          {
+            label: 'Advanced Auto-Mod',
+            description: 'Lightning-fast keyword filters and logging.',
+            value: 'automod',
+            emoji: '🛡️'
+          },
+          {
+            label: 'Custom & Animated Emojis',
+            description: 'Full Nitro emoji support across all embeds.',
+            value: 'emojis',
+            emoji: '💎'
+          }
+        ])
+    );
+
     const premEmbed = new EmbedBuilder()
       .setColor('#FFD700')
       .setTitle('🌟 Bot Premium Features ✨')
-      .setDescription('Unlock the ultimate server experience with our exclusive perks!')
-      .addFields(
-        { name: '🚀 24/7 Ultra Speed', value: 'High performance priority cloud hosting.', inline: false },
-        { name: '🛡️ Advanced Auto-Mod', value: 'Smart keyword filtering & lightning-fast moderation.', inline: false },
-        { name: '💎 Nitro Emojis Integration', value: 'Full support for custom & animated emojis across all embeds.', inline: false }
-      )
-      .setFooter({ text: 'Contact bot owner to upgrade to Premium!' });
-    return message.reply({ embeds: [premEmbed] }).catch(() => {});
+      .setDescription('Use the dropdown menu below to explore our exclusive server booster perks!');
+
+    const sentMsg = await message.reply({ embeds: [premEmbed], components: [row] });
+
+    const collector = sentMsg.createMessageComponentCollector({ time: 30000 });
+
+    collector.on('collect', async i => {
+      if (i.user.id !== message.author.id) {
+        return i.reply({ content: '❌ This menu is not for you!', ephemeral: true });
+      }
+
+      if (i.values[0] === 'hosting') {
+        await i.reply({ content: '🚀 **24/7 Cloud Hosting:** Ensures your bot never goes offline with dedicated high-performance resources.', ephemeral: true });
+      } else if (i.values[0] === 'automod') {
+        await i.reply({ content: '🛡️ **Advanced Auto-Mod:** Actively blocks harassment, toxic slurs, and malicious links instantly.', ephemeral: true });
+      } else if (i.values[0] === 'emojis') {
+        await i.reply({ content: '💎 **Custom Emojis:** Fully utilizes server and animated emojis seamlessly across embeds and titles.', ephemeral: true });
+      }
+    });
+
+    collector.on('end', () => {
+      sentMsg.edit({ components: [] }).catch(() => {});
+    });
+    return;
   }
 
   // 📊 New Feature 1: .poll [question]
