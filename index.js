@@ -62,7 +62,7 @@ client.on('messageCreate', async message => {
     afkUsers.delete(message.author.id);
     const returnEmbed = new EmbedBuilder()
       .setColor('#00FF00')
-      .setDescription(`<a:warning:1570699409123971126> Welcome back **${message.author.username}**, your AFK status has been removed! ✨`);
+      .setDescription(`<:codexenjoy:1570762957946757130> Welcome back **${message.author.username}**, your AFK status has been successfully removed! ✨`);
     const returnMsg = await message.channel.send({ embeds: [returnEmbed] });
     setTimeout(() => returnMsg.delete().catch(() => {}), 5000);
   }
@@ -77,7 +77,7 @@ client.on('messageCreate', async message => {
       try {
         const dmEmbed = new EmbedBuilder()
           .setColor('#FFA500')
-          .setTitle('<a:warning:1570699409123971126> You were mentioned while AFK!')
+          .setTitle('<:codexenjoy:1570762957946757130> You were mentioned while AFK!')
           .setDescription(`**${message.author.tag}** mentioned you in **${message.guild.name}**.\n\n**Message:** "${message.content}"`);
         await user.send({ embeds: [dmEmbed] });
       } catch (err) {
@@ -87,8 +87,8 @@ client.on('messageCreate', async message => {
       // Send chat reply and auto-delete after 1 minute (60,000 ms)
       const afkEmbed = new EmbedBuilder()
         .setColor('#FFA500')
-        .setTitle('<a:warning:1570699409123971126> User is currently AFK')
-        .setDescription(`💤 **${user.username}** is away.`)
+        .setTitle('<:codexenjoy:1570762957946757130> User is currently AFK')
+        .setDescription(`💤 **${user.username}** is away right now.`)
         .addFields(
           { name: 'Reason', value: afkData.reason || 'No reason provided', inline: true },
           { name: 'Away For', value: `${timeAgo} minutes`, inline: true }
@@ -114,7 +114,7 @@ client.on('messageCreate', async message => {
       try {
         await message.delete();
 
-        // ⚠️ Channel Warning Embed with Animated Emoji
+        // ⚠️ Channel Warning Embed with Animated Warning Emoji
         const warnEmbed = new EmbedBuilder()
           .setColor('#FF0000')
           .setTitle('<a:warning:1570699409123971126> Auto-Mod Warning')
@@ -165,41 +165,62 @@ client.on('messageCreate', async message => {
   timestamps.set(message.author.id, now);
   setTimeout(() => timestamps.delete(message.author.id), cooldownAmount);
 
-  // 📄 .help Command
-  if (command === 'help') {
-    const embed = new EmbedBuilder()
-      .setColor('#5865F2')
-      .setTitle('<a:warning:1570699409123971126> Bot Help Menu 🌟')
-      .setDescription('Use **`.menu`** to open the interactive dropdown command panel with custom server & animated emoji support!')
-      .addFields(
-        { name: '🛠️ `.menu`', value: 'Opens interactive stylish command dropdown', inline: true },
-        { name: '💤 `.afk [reason]`', value: 'Sets your custom AFK status', inline: true },
-        { name: '🖼️ `.av [@user]`', value: 'Shows user avatar in high quality', inline: true }
-      );
-    return message.reply({ embeds: [embed] }).catch(() => {});
-  }
-
-  // 🌟 .menu Command with Interactive Dropdown
-  if (command === 'menu') {
+  // 🌟 .helps Command with Interactive Stylish Dropdown Menu
+  if (command === 'helps') {
     const row = new ActionRowBuilder().addComponents(
       new StringSelectMenuBuilder()
         .setCustomId('command_menu')
         .setPlaceholder('📂 Select a command category or action')
         .addOptions([
-          { label: 'AFK System', description: 'Set your AFK status with reason & DM alerts', value: 'cmd_afk', emoji: '💤' },
-          { label: 'User Avatar (.av)', description: 'View high-resolution user avatars', value: 'cmd_av', emoji: '🖼️' },
-          { label: 'Voice Channel (.vc)', description: 'Connect bot to VC (Admin Only)', value: 'cmd_vc', emoji: '🔊' },
-          { label: 'Timeout User (.t)', description: 'Timeout a member with DM notification (Admin Only)', value: 'cmd_timeout', emoji: '⏱️' },
-          { label: 'Server Poll (.poll)', description: 'Create an interactive server poll', value: 'cmd_poll', emoji: '📊' },
-          { label: 'Snipe Deleted Message (.snipe)', description: 'Recover the last deleted message', value: 'cmd_snipe', emoji: '🎯' },
-          { label: 'Server Info (.serverinfo)', description: 'Display detailed server statistics', value: 'cmd_serverinfo', emoji: '🏰' }
+          {
+            label: 'AFK System',
+            description: 'Set your AFK status with reason & DM alerts',
+            value: 'cmd_afk',
+            emoji: '1570762957946757130' // <:codexenjoy:1570762957946757130> ID format for string select menu emoji
+          },
+          {
+            label: 'User Avatar (.av)',
+            description: 'View high-resolution user avatars',
+            value: 'cmd_av',
+            emoji: '1570762961642070096' // <a:spider_whatsup:1570762961642070096>
+          },
+          {
+            label: 'Voice Channel (.vc)',
+            description: 'Connect bot to VC (Admin Only)',
+            value: 'cmd_vc',
+            emoji: '1570762968218599504' // <:codex_vc:1570762968218599504>
+          },
+          {
+            label: 'Timeout User (.t)',
+            description: 'Timeout a member with DM notification (Admin Only)',
+            value: 'cmd_timeout',
+            emoji: '1570762972291141694' // <:codex_warn:1570762972291141694>
+          },
+          {
+            label: 'Server Poll (.poll)',
+            description: 'Create an interactive server poll',
+            value: 'cmd_poll',
+            emoji: '1570762983422828574' // <:wnb_bacha:1570762983422828574>
+          },
+          {
+            label: 'Snipe Deleted Message (.snipe)',
+            description: 'Recover the last deleted message',
+            value: 'cmd_snipe',
+            emoji: '1570699409123971126' // Animated warning emoji ID
+          },
+          {
+            label: 'Server Info (.serverinfo)',
+            description: 'Display detailed server statistics',
+            value: 'cmd_serverinfo',
+            emoji: '1570762989240582209' // <:server:1570762989240582209>
+          }
         ])
     );
 
     const menuEmbed = new EmbedBuilder()
       .setColor('#5865F2')
       .setTitle('<a:warning:1570699409123971126> Interactive Command Dashboard ✨')
-      .setDescription('Select any command from the dropdown menu below to view its details and usage instructions! Fully powered with server & custom animated emojis 💎');
+      .setDescription('Welcome to the ultimate command control center! Use the stylish dropdown menu below to explore all features powered with your custom server emojis 💎');
 
     const sentMsg = await message.reply({ embeds: [menuEmbed], components: [row] });
 
@@ -214,19 +235,19 @@ client.on('messageCreate', async message => {
       let responseText = '';
 
       if (val === 'cmd_afk') {
-        responseText = '<a:warning:1570699409123971126> **.afk [reason]** — Sets your AFK status. When anyone mentions or replies to you, the bot automatically DMs them your message and notifies you!';
+        responseText = '<:codexenjoy:1570762957946757130> **.afk [reason]** — Sets your AFK status. When anyone mentions or replies to you, the bot automatically DMs them your message and notifies you!';
       } else if (val === 'cmd_av') {
-        responseText = '<a:warning:1570699409123971126> **.av [@user]** — Fetches and displays the high-resolution avatar of yourself or the mentioned user.';
+        responseText = '<a:spider_whatsup:1570762961642070096> **.av [@user]** — Fetches and displays the high-resolution avatar of yourself or the mentioned user.';
       } else if (val === 'cmd_vc') {
-        responseText = '<a:warning:1570699409123971126> **.vc** — Connects the bot to your current voice channel for 24/7 presence (**Administrator Only**).';
+        responseText = '<:codex_vc:1570762968218599504> **.vc** — Connects the bot to your current voice channel for 24/7 presence (**Administrator Only**).';
       } else if (val === 'cmd_timeout') {
-        responseText = '<a:warning:1570699409123971126> **.t [@user] [minutes] [reason]** — Times out a member and sends them an automated DM notification (**Administrator Only**).';
+        responseText = '<:codex_warn:1570762972291141694> **.t [@user] [minutes] [reason]** — Times out a member and sends them an automated DM notification (**Administrator Only**).';
       } else if (val === 'cmd_poll') {
-        responseText = '<a:warning:1570699409123971126> **.poll [question]** — Creates an interactive voting poll with thumbs-up and thumbs-down reactions.';
+        responseText = '<:wnb_bacha:1570762983422828574> **.poll [question]** — Creates an interactive voting poll with thumbs-up and thumbs-down reactions.';
       } else if (val === 'cmd_snipe') {
         responseText = '<a:warning:1570699409123971126> **.snipe** — Recovers and displays the most recently deleted text or image attachment in the current channel.';
       } else if (val === 'cmd_serverinfo') {
-        responseText = '<a:warning:1570699409123971126> **.serverinfo** — Displays comprehensive details about the server, including owner, member count, and creation date.';
+        responseText = '<:server:1570762989240582209> **.serverinfo** — Displays comprehensive details about the server, including owner, member count, and creation date.';
       }
 
       await i.reply({ content: responseText, ephemeral: true });
@@ -245,7 +266,7 @@ client.on('messageCreate', async message => {
 
     const afkSetEmbed = new EmbedBuilder()
       .setColor('#5865F2')
-      .setDescription(`<a:warning:1570699409123971126> **${message.author.username}**, I have set your AFK: **${reason}**`);
+      .setDescription(`<:codexenjoy:1570762957946757130> **${message.author.username}**, I have set your AFK: **${reason}**`);
     return message.reply({ embeds: [afkSetEmbed] }).catch(() => {});
   }
 
@@ -254,7 +275,7 @@ client.on('messageCreate', async message => {
     const target = message.mentions.users.first() || message.author;
     const avEmbed = new EmbedBuilder()
       .setColor('#5865F2')
-      .setTitle(`<a:warning:1570699409123971126> ${target.username}'s Avatar`)
+      .setTitle(`<a:spider_whatsup:1570762961642070096> ${target.username}'s Avatar`)
       .setImage(target.displayAvatarURL({ size: 1024, dynamic: true }));
     return message.reply({ embeds: [avEmbed] }).catch(() => {});
   }
@@ -262,12 +283,12 @@ client.on('messageCreate', async message => {
   // 🔊 .vc Command (Admin Only)
   if (command === 'vc') {
     if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-      return message.reply('<a:warning:1570699409123971126> You need **Administrator** permissions to use `.vc`!').catch(() => {});
+      return message.reply('<:codex_warn:1570762972291141694> You need **Administrator** permissions to use `.vc`!').catch(() => {});
     }
 
     const channel = message.member?.voice.channel;
     if (!channel) {
-      return message.reply('<a:warning:1570699409123971126> You need to be in a voice channel first to use `.vc`!').catch(() => {});
+      return message.reply('<:codex_vc:1570762968218599504> You need to be in a voice channel first to use `.vc`!').catch(() => {});
     }
 
     try {
@@ -279,7 +300,7 @@ client.on('messageCreate', async message => {
       });
       const vcEmbed = new EmbedBuilder()
         .setColor('#00FF00')
-        .setDescription(`<a:warning:1570699409123971126> Successfully joined **${channel.name}** and staying connected 24/7!`);
+        .setDescription(`<:codex_vc:1570762968218599504> Successfully joined **${channel.name}** and staying connected 24/7!`);
       return message.reply({ embeds: [vcEmbed] }).catch(() => {});
     } catch (err) {
       return message.reply('<a:warning:1570699409123971126> Failed to join the voice channel.').catch(() => {});
@@ -289,12 +310,12 @@ client.on('messageCreate', async message => {
   // ⏱️ .t Command (Admin Only Timeout + DM)
   if (command === 't') {
     if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-      return message.reply('<a:warning:1570699409123971126> You need **Administrator** permissions to use `.t`!').catch(() => {});
+      return message.reply('<:codex_warn:1570762972291141694> You need **Administrator** permissions to use `.t`!').catch(() => {});
     }
 
     const target = message.mentions.members.first();
     if (!target) {
-      return message.reply('<a:warning:1570699409123971126> Please mention a user to timeout! Usage: `.t @user [minutes] [reason]`').catch(() => {});
+      return message.reply('<:codex_warn:1570762972291141694> Please mention a user to timeout! Usage: `.t @user [minutes] [reason]`').catch(() => {});
     }
 
     const durationMinutes = parseInt(args[1]) || 10;
@@ -308,14 +329,14 @@ client.on('messageCreate', async message => {
       try {
         const dmEmbed = new EmbedBuilder()
           .setColor('#FF0000')
-          .setTitle(`<a:warning:1570699409123971126> Moderation Notice - ${message.guild.name}`)
+          .setTitle(`<:codex_warn:1570762972291141694> Moderation Notice - ${message.guild.name}`)
           .setDescription(`You have been timed out for **${durationMinutes} minutes**.\n\n**Reason:** ${reason}`);
         await target.send({ embeds: [dmEmbed] });
       } catch (e) {}
 
       const successEmbed = new EmbedBuilder()
         .setColor('#00FF00')
-        .setDescription(`<a:warning:1570699409123971126> Successfully timed out **${target.user.tag}** for ${durationMinutes} minutes.\n**Reason:** ${reason}`);
+        .setDescription(`<:codex_warn:1570762972291141694> Successfully timed out **${target.user.tag}** for ${durationMinutes} minutes.\n**Reason:** ${reason}`);
       return message.reply({ embeds: [successEmbed] });
     } catch (err) {
       return message.reply('<a:warning:1570699409123971126> Failed to timeout user. Make sure my role is higher than theirs!').catch(() => {});
@@ -326,11 +347,11 @@ client.on('messageCreate', async message => {
   if (command === 'poll') {
     const question = args.join(' ');
     if (!question) {
-      return message.reply('<a:warning:1570699409123971126> Please provide a question for the poll! Usage: `.poll [your question]`').catch(() => {});
+      return message.reply('<:wnb_bacha:1570762983422828574> Please provide a question for the poll! Usage: `.poll [your question]`').catch(() => {});
     }
     const pollEmbed = new EmbedBuilder()
       .setColor('#5865F2')
-      .setTitle('<a:warning:1570699409123971126> Server Poll')
+      .setTitle('<:wnb_bacha:1570762983422828574> Server Poll')
       .setDescription(question)
       .setFooter({ text: `Poll created by ${message.author.tag}` })
       .setTimestamp();
@@ -366,7 +387,7 @@ client.on('messageCreate', async message => {
     const { guild } = message;
     const serverEmbed = new EmbedBuilder()
       .setColor('#5865F2')
-      .setTitle(`<a:warning:1570699409123971126> Server Information: ${guild.name}`)
+      .setTitle(`<:server:1570762989240582209> Server Information: ${guild.name}`)
       .setThumbnail(guild.iconURL({ dynamic: true }))
       .addFields(
         { name: '👑 Owner', value: `<@${guild.ownerId}>`, inline: true },
