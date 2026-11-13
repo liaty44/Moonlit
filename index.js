@@ -220,7 +220,7 @@ client.on('messageCreate', async message => {
     const menuEmbed = new EmbedBuilder()
       .setColor('#5865F2')
       .setTitle('<a:warning:1570699409123971126> Interactive Command Dashboard ✨')
-      .setDescription('Welcome to the ultimate command control center! Use the stylish dropdown menu below to explore all features powered with your custom server emojis 💎');
+      .setDescription('Welcome to the ultimate command control center! Use the menu below to explore all features powered by MOONLIT CAFE BEST CHILL SERVER');
 
     const sentMsg = await message.reply({ embeds: [menuEmbed], components: [row] });
 
