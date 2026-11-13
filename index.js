@@ -30,11 +30,13 @@ const afkUsers = new Map();      // Stores userId -> { reason, time }
 const cooldowns = new Map();   // 3s Command Cooldown Map
 const snipedMessages = new Map(); // Stores deleted messages for .snipe
 
-// 🛡️ Comprehensive Abusive & Toxic Words List
+// 🛡️ Expanded Comprehensive Abusive & Toxic Words List (20+ terms & bypass variations)
 const badWords = [
-  'madarchod', 'behenchod', 'bhosdike', 'chutiya', 'randi', 'gandu', 
-  'lauda', 'lund', 'choot', 'mc', 'bc', 'nigga', 'nigger', 'bastard', 
-  'slut', 'whore', 'asshole', 'dick', 'pussy', 'faggot', 'fuck', 'f', 'tmkc', 'xxx', 'sex', 'sexy', 'nig', 'bitch'
+  'fuc', 'fuk', 'fuking', 'fck', 'f@ck', 'fxxk', 'fuck', 'fucking',
+  'nigga', 'nigger', 'nig', 'n1gga', 'bitch', 'btch', 'bc', 'mc', 
+  'madarchod', 'behenchod', 'bhosdike', 'gand', 'gandu', 'lauda', 
+  'lund', 'choot', 'chutiya', 'randi', 'bastard', 'slut', 'whore', 
+  'asshole', 'dick', 'pussy', 'faggot'
 ];
 
 client.once('ready', () => {
@@ -101,8 +103,13 @@ client.on('messageCreate', async message => {
 
   // 3️⃣ Precise Auto-Moderation (Catches abuses, ignores emojis and normal chat)
   if (message.guild) {
-    const wordsInMessage = message.content.toLowerCase().split(/\s+/);
-    const isAbusive = wordsInMessage.some(word => badWords.includes(word));
+    const rawText = message.content.toLowerCase();
+    const wordsInMessage = rawText.split(/\s+/);
+    
+    // Check if any word or variation matches the expanded bad words list
+    const isAbusive = wordsInMessage.some(word => 
+      badWords.some(bad => word.includes(bad))
+    );
 
     if (isAbusive) {
       try {
@@ -159,24 +166,112 @@ client.on('messageCreate', async message => {
   timestamps.set(message.author.id, now);
   setTimeout(() => timestamps.delete(message.author.id), cooldownAmount);
 
-  // 📄 .help Command
+  // 📄 .help Command (Static listing)
   if (command === 'help') {
     const embed = new EmbedBuilder()
       .setColor('#5865F2')
       .setTitle('✨ Bot Help Menu 🌟')
-      .setDescription('Here are all available commands:')
+      .setDescription('Use **`.menu`** to open the interactive dropdown command panel with custom server & animated emoji support!')
       .addFields(
-        { name: '🛠️ `.help`', value: 'Displays this command panel', inline: true },
+        { name: '🛠️ `.menu`', value: 'Opens interactive stylish command dropdown', inline: true },
         { name: '💤 `.afk [reason]`', value: 'Sets your custom AFK status', inline: true },
-        { name: '🖼️ `.av [@user]`', value: 'Shows user avatar in high quality', inline: true },
-        { name: '🔊 `.vc`', value: 'Connects bot to VC (Admin Only)', inline: true },
-        { name: '⏱️ `.t [@user] [min] [reason]`', value: 'Timeout user (Admin Only)', inline: true },
-        { name: '🌟 `.premium`', value: 'Interactive premium menu dropdown', inline: true },
-        { name: '📊 `.poll [question]`', value: 'Creates an interactive server poll', inline: true },
-        { name: '🎯 `.snipe`', value: 'Recovers the last deleted message', inline: true },
-        { name: '🏰 `.serverinfo`', value: 'Shows detailed server info', inline: true }
+        { name: '🖼️ `.av [@user]`', value: 'Shows user avatar in high quality', inline: true }
       );
     return message.reply({ embeds: [embed] }).catch(() => {});
+  }
+
+  // 🌟 .menu Command with Interactive Dropdown for All Commands & Emojis
+  if (command === 'menu') {
+    const row = new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('command_menu')
+        .setPlaceholder('📂 Select a command category or action')
+        .addOptions([
+          {
+            label: 'AFK System',
+            description: 'Set your AFK status with reason & DM alerts',
+            value: 'cmd_afk',
+            emoji: '💤'
+          },
+          {
+            label: 'User Avatar (.av)',
+            description: 'View high-resolution user avatars',
+            value: 'cmd_av',
+            emoji: '🖼️'
+          },
+          {
+            label: 'Voice Channel (.vc)',
+            description: 'Connect bot to VC (Admin Only)',
+            value: 'cmd_vc',
+            emoji: '🔊'
+          },
+          {
+            label: 'Timeout User (.t)',
+            description: 'Timeout a member with DM notification (Admin Only)',
+            value: 'cmd_timeout',
+            emoji: '⏱️'
+          },
+          {
+            label: 'Server Poll (.poll)',
+            description: 'Create an interactive server poll',
+            value: 'cmd_poll',
+            emoji: '📊'
+          },
+          {
+            label: 'Snipe Deleted Message (.snipe)',
+            description: 'Recover the last deleted message',
+            value: 'cmd_snipe',
+            emoji: '🎯'
+          },
+          {
+            label: 'Server Info (.serverinfo)',
+            description: 'Display detailed server statistics',
+            value: 'cmd_serverinfo',
+            emoji: '🏰'
+          }
+        ])
+    );
+
+    const menuEmbed = new EmbedBuilder()
+      .setColor('#5865F2')
+      .setTitle('🌟 Interactive Command Dashboard ✨')
+      .setDescription('Select any command from the dropdown menu below to view its details and usage instructions! Fully powered with server & custom animated emojis 💎');
+
+    const sentMsg = await message.reply({ embeds: [menuEmbed], components: [row] });
+
+    const collector = sentMsg.createMessageComponentCollector({ time: 45000 });
+
+    collector.on('collect', async i => {
+      if (i.user.id !== message.author.id) {
+        return i.reply({ content: '❌ This interactive menu is not for you!', ephemeral: true });
+      }
+
+      const val = i.values[0];
+      let responseText = '';
+
+      if (val === 'cmd_afk') {
+        responseText = '💤 **.afk [reason]** — Sets your AFK status. When anyone mentions or replies to you, the bot automatically DMs them your message and notifies you!';
+      } else if (val === 'cmd_av') {
+        responseText = '🖼️ **.av [@user]** — Fetches and displays the high-resolution avatar of yourself or the mentioned user.';
+      } else if (val === 'cmd_vc') {
+        responseText = '🔊 **.vc** — Connects the bot to your current voice channel for 24/7 presence (**Administrator Only**).';
+      } else if (val === 'cmd_timeout') {
+        responseText = '⏱️ **.t [@user] [minutes] [reason]** — Times out a member and sends them an automated DM notification (**Administrator Only**).';
+      } else if (val === 'cmd_poll') {
+        responseText = '📊 **.poll [question]** — Creates an interactive voting poll with thumbs-up and thumbs-down reactions.';
+      } else if (val === 'cmd_snipe') {
+        responseText = '🎯 **.snipe** — Recovers and displays the most recently deleted text or image attachment in the current channel.';
+      } else if (val === 'cmd_serverinfo') {
+        responseText = '🏰 **.serverinfo** — Displays comprehensive details about the server, including owner, member count, and creation date.';
+      }
+
+      await i.reply({ content: responseText, ephemeral: true });
+    });
+
+    collector.on('end', () => {
+      sentMsg.edit({ components: [] }).catch(() => {});
+    });
+    return;
   }
 
   // 💤 .afk Command
@@ -263,63 +358,6 @@ client.on('messageCreate', async message => {
     }
   }
 
-  // 🌟 .premium Command with Dropdown Menu Design
-  if (command === 'premium') {
-    const row = new ActionRowBuilder().addComponents(
-      new StringSelectMenuBuilder()
-        .setCustomId('premium_menu')
-        .setPlaceholder('✨ Select a Premium Feature')
-        .addOptions([
-          {
-            label: '24/7 Cloud Hosting',
-            description: 'High-speed priority infrastructure uptime.',
-            value: 'hosting',
-            emoji: '🚀'
-          },
-          {
-            label: 'Advanced Auto-Mod',
-            description: 'Lightning-fast keyword filters and logging.',
-            value: 'automod',
-            emoji: '🛡️'
-          },
-          {
-            label: 'Custom & Animated Emojis',
-            description: 'Full Nitro emoji support across all embeds.',
-            value: 'emojis',
-            emoji: '💎'
-          }
-        ])
-    );
-
-    const premEmbed = new EmbedBuilder()
-      .setColor('#FFD700')
-      .setTitle('🌟 Bot Premium Features ✨')
-      .setDescription('Use the dropdown menu below to explore our exclusive server booster perks!');
-
-    const sentMsg = await message.reply({ embeds: [premEmbed], components: [row] });
-
-    const collector = sentMsg.createMessageComponentCollector({ time: 30000 });
-
-    collector.on('collect', async i => {
-      if (i.user.id !== message.author.id) {
-        return i.reply({ content: '❌ This menu is not for you!', ephemeral: true });
-      }
-
-      if (i.values[0] === 'hosting') {
-        await i.reply({ content: '🚀 **24/7 Cloud Hosting:** Ensures your bot never goes offline with dedicated high-performance resources.', ephemeral: true });
-      } else if (i.values[0] === 'automod') {
-        await i.reply({ content: '🛡️ **Advanced Auto-Mod:** Actively blocks harassment, toxic slurs, and malicious links instantly.', ephemeral: true });
-      } else if (i.values[0] === 'emojis') {
-        await i.reply({ content: '💎 **Custom Emojis:** Fully utilizes server and animated emojis seamlessly across embeds and titles.', ephemeral: true });
-      }
-    });
-
-    collector.on('end', () => {
-      sentMsg.edit({ components: [] }).catch(() => {});
-    });
-    return;
-  }
-
   // 📊 New Feature 1: .poll [question]
   if (command === 'poll') {
     const question = args.join(' ');
@@ -333,7 +371,7 @@ client.on('messageCreate', async message => {
       .setFooter({ text: `Poll created by ${message.author.tag}` })
       .setTimestamp();
     
-    const pollMsg = await message.channel.send({ embeds: [pollEmbed] }).catch(() => {});
+    const pollMsg = += await message.channel.send({ embeds: [pollEmbed] }).catch(() => {});
     if (pollMsg) {
       await pollMsg.react('👍');
       await pollMsg.react('👎');
