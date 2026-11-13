@@ -30,7 +30,7 @@ const afkUsers = new Map();      // Stores userId -> { reason, time }
 const cooldowns = new Map();   // 3s Command Cooldown Map
 const snipedMessages = new Map(); // Stores deleted messages for .snipe
 
-// 🛡️ Expanded Comprehensive Abusive & Toxic Words List (20+ terms & bypass variations)
+// 🛡️ Expanded Comprehensive Abusive & Toxic Words List
 const badWords = [
   'fuc', 'fuk', 'fuking', 'fck', 'f@ck', 'fxxk', 'fuck', 'fucking',
   'nigga', 'nigger', 'nig', 'n1gga', 'bitch', 'btch', 'bc', 'mc', 
@@ -62,7 +62,7 @@ client.on('messageCreate', async message => {
     afkUsers.delete(message.author.id);
     const returnEmbed = new EmbedBuilder()
       .setColor('#00FF00')
-      .setDescription(`👋 Welcome back **${message.author.username}**, your AFK status has been removed! ✨`);
+      .setDescription(`<a:warning:1570699409123971126> Welcome back **${message.author.username}**, your AFK status has been removed! ✨`);
     const returnMsg = await message.channel.send({ embeds: [returnEmbed] });
     setTimeout(() => returnMsg.delete().catch(() => {}), 5000);
   }
@@ -77,7 +77,7 @@ client.on('messageCreate', async message => {
       try {
         const dmEmbed = new EmbedBuilder()
           .setColor('#FFA500')
-          .setTitle('🔔 You were mentioned while AFK!')
+          .setTitle('<a:warning:1570699409123971126> You were mentioned while AFK!')
           .setDescription(`**${message.author.tag}** mentioned you in **${message.guild.name}**.\n\n**Message:** "${message.content}"`);
         await user.send({ embeds: [dmEmbed] });
       } catch (err) {
@@ -87,7 +87,7 @@ client.on('messageCreate', async message => {
       // Send chat reply and auto-delete after 1 minute (60,000 ms)
       const afkEmbed = new EmbedBuilder()
         .setColor('#FFA500')
-        .setTitle('💤 User is currently AFK')
+        .setTitle('<a:warning:1570699409123971126> User is currently AFK')
         .setDescription(`💤 **${user.username}** is away.`)
         .addFields(
           { name: 'Reason', value: afkData.reason || 'No reason provided', inline: true },
@@ -101,12 +101,11 @@ client.on('messageCreate', async message => {
     }
   });
 
-  // 3️⃣ Precise Auto-Moderation (Catches abuses, ignores emojis and normal chat)
+  // 3️⃣ Precise Auto-Moderation
   if (message.guild) {
     const rawText = message.content.toLowerCase();
     const wordsInMessage = rawText.split(/\s+/);
     
-    // Check if any word or variation matches the expanded bad words list
     const isAbusive = wordsInMessage.some(word => 
       badWords.some(bad => word.includes(bad))
     );
@@ -115,10 +114,10 @@ client.on('messageCreate', async message => {
       try {
         await message.delete();
 
-        // ⚠️ Channel Warning Embed
+        // ⚠️ Channel Warning Embed with Animated Emoji
         const warnEmbed = new EmbedBuilder()
           .setColor('#FF0000')
-          .setTitle('⚠️ Auto-Mod Warning')
+          .setTitle('<a:warning:1570699409123971126> Auto-Mod Warning')
           .setDescription(`${message.author}, your message was deleted because it contained prohibited abusive words.`);
         await message.channel.send({ embeds: [warnEmbed] });
 
@@ -126,7 +125,7 @@ client.on('messageCreate', async message => {
         try {
           const dmEmbed = new EmbedBuilder()
             .setColor('#FF0000')
-            .setTitle('🚨 Moderation Action Notice')
+            .setTitle('<a:warning:1570699409123971126> Moderation Action Notice')
             .setDescription(`You have been timed out for **10 minutes** in **${message.guild.name}**.\n\n**Reason:** Using prohibited abusive words.`);
           await message.author.send({ embeds: [dmEmbed] });
         } catch (dmErr) {}
@@ -160,17 +159,17 @@ client.on('messageCreate', async message => {
     const expirationTime = timestamps.get(message.author.id) + cooldownAmount;
     if (now < expirationTime) {
       const timeLeft = ((expirationTime - now) / 1000).toFixed(1);
-      return message.reply(`⏳ Please wait **${timeLeft}s** before using the \`${command}\` command again!`).catch(() => {});
+      return message.reply(`<a:warning:1570699409123971126> Please wait **${timeLeft}s** before using the \`${command}\` command again!`).catch(() => {});
     }
   }
   timestamps.set(message.author.id, now);
   setTimeout(() => timestamps.delete(message.author.id), cooldownAmount);
 
-  // 📄 .help Command (Static listing)
+  // 📄 .help Command
   if (command === 'help') {
     const embed = new EmbedBuilder()
       .setColor('#5865F2')
-      .setTitle('✨ Bot Help Menu 🌟')
+      .setTitle('<a:warning:1570699409123971126> Bot Help Menu 🌟')
       .setDescription('Use **`.menu`** to open the interactive dropdown command panel with custom server & animated emoji support!')
       .addFields(
         { name: '🛠️ `.menu`', value: 'Opens interactive stylish command dropdown', inline: true },
@@ -180,61 +179,26 @@ client.on('messageCreate', async message => {
     return message.reply({ embeds: [embed] }).catch(() => {});
   }
 
-  // 🌟 .menu Command with Interactive Dropdown for All Commands & Emojis
+  // 🌟 .menu Command with Interactive Dropdown
   if (command === 'menu') {
     const row = new ActionRowBuilder().addComponents(
       new StringSelectMenuBuilder()
         .setCustomId('command_menu')
         .setPlaceholder('📂 Select a command category or action')
         .addOptions([
-          {
-            label: 'AFK System',
-            description: 'Set your AFK status with reason & DM alerts',
-            value: 'cmd_afk',
-            emoji: '💤'
-          },
-          {
-            label: 'User Avatar (.av)',
-            description: 'View high-resolution user avatars',
-            value: 'cmd_av',
-            emoji: '🖼️'
-          },
-          {
-            label: 'Voice Channel (.vc)',
-            description: 'Connect bot to VC (Admin Only)',
-            value: 'cmd_vc',
-            emoji: '🔊'
-          },
-          {
-            label: 'Timeout User (.t)',
-            description: 'Timeout a member with DM notification (Admin Only)',
-            value: 'cmd_timeout',
-            emoji: '⏱️'
-          },
-          {
-            label: 'Server Poll (.poll)',
-            description: 'Create an interactive server poll',
-            value: 'cmd_poll',
-            emoji: '📊'
-          },
-          {
-            label: 'Snipe Deleted Message (.snipe)',
-            description: 'Recover the last deleted message',
-            value: 'cmd_snipe',
-            emoji: '🎯'
-          },
-          {
-            label: 'Server Info (.serverinfo)',
-            description: 'Display detailed server statistics',
-            value: 'cmd_serverinfo',
-            emoji: '🏰'
-          }
+          { label: 'AFK System', description: 'Set your AFK status with reason & DM alerts', value: 'cmd_afk', emoji: '💤' },
+          { label: 'User Avatar (.av)', description: 'View high-resolution user avatars', value: 'cmd_av', emoji: '🖼️' },
+          { label: 'Voice Channel (.vc)', description: 'Connect bot to VC (Admin Only)', value: 'cmd_vc', emoji: '🔊' },
+          { label: 'Timeout User (.t)', description: 'Timeout a member with DM notification (Admin Only)', value: 'cmd_timeout', emoji: '⏱️' },
+          { label: 'Server Poll (.poll)', description: 'Create an interactive server poll', value: 'cmd_poll', emoji: '📊' },
+          { label: 'Snipe Deleted Message (.snipe)', description: 'Recover the last deleted message', value: 'cmd_snipe', emoji: '🎯' },
+          { label: 'Server Info (.serverinfo)', description: 'Display detailed server statistics', value: 'cmd_serverinfo', emoji: '🏰' }
         ])
     );
 
     const menuEmbed = new EmbedBuilder()
       .setColor('#5865F2')
-      .setTitle('🌟 Interactive Command Dashboard ✨')
+      .setTitle('<a:warning:1570699409123971126> Interactive Command Dashboard ✨')
       .setDescription('Select any command from the dropdown menu below to view its details and usage instructions! Fully powered with server & custom animated emojis 💎');
 
     const sentMsg = await message.reply({ embeds: [menuEmbed], components: [row] });
@@ -250,19 +214,19 @@ client.on('messageCreate', async message => {
       let responseText = '';
 
       if (val === 'cmd_afk') {
-        responseText = '💤 **.afk [reason]** — Sets your AFK status. When anyone mentions or replies to you, the bot automatically DMs them your message and notifies you!';
+        responseText = '<a:warning:1570699409123971126> **.afk [reason]** — Sets your AFK status. When anyone mentions or replies to you, the bot automatically DMs them your message and notifies you!';
       } else if (val === 'cmd_av') {
-        responseText = '🖼️ **.av [@user]** — Fetches and displays the high-resolution avatar of yourself or the mentioned user.';
+        responseText = '<a:warning:1570699409123971126> **.av [@user]** — Fetches and displays the high-resolution avatar of yourself or the mentioned user.';
       } else if (val === 'cmd_vc') {
-        responseText = '🔊 **.vc** — Connects the bot to your current voice channel for 24/7 presence (**Administrator Only**).';
+        responseText = '<a:warning:1570699409123971126> **.vc** — Connects the bot to your current voice channel for 24/7 presence (**Administrator Only**).';
       } else if (val === 'cmd_timeout') {
-        responseText = '⏱️ **.t [@user] [minutes] [reason]** — Times out a member and sends them an automated DM notification (**Administrator Only**).';
+        responseText = '<a:warning:1570699409123971126> **.t [@user] [minutes] [reason]** — Times out a member and sends them an automated DM notification (**Administrator Only**).';
       } else if (val === 'cmd_poll') {
-        responseText = '📊 **.poll [question]** — Creates an interactive voting poll with thumbs-up and thumbs-down reactions.';
+        responseText = '<a:warning:1570699409123971126> **.poll [question]** — Creates an interactive voting poll with thumbs-up and thumbs-down reactions.';
       } else if (val === 'cmd_snipe') {
-        responseText = '🎯 **.snipe** — Recovers and displays the most recently deleted text or image attachment in the current channel.';
+        responseText = '<a:warning:1570699409123971126> **.snipe** — Recovers and displays the most recently deleted text or image attachment in the current channel.';
       } else if (val === 'cmd_serverinfo') {
-        responseText = '🏰 **.serverinfo** — Displays comprehensive details about the server, including owner, member count, and creation date.';
+        responseText = '<a:warning:1570699409123971126> **.serverinfo** — Displays comprehensive details about the server, including owner, member count, and creation date.';
       }
 
       await i.reply({ content: responseText, ephemeral: true });
@@ -281,7 +245,7 @@ client.on('messageCreate', async message => {
 
     const afkSetEmbed = new EmbedBuilder()
       .setColor('#5865F2')
-      .setDescription(`💤 **${message.author.username}**, I have set your AFK: **${reason}**`);
+      .setDescription(`<a:warning:1570699409123971126> **${message.author.username}**, I have set your AFK: **${reason}**`);
     return message.reply({ embeds: [afkSetEmbed] }).catch(() => {});
   }
 
@@ -290,7 +254,7 @@ client.on('messageCreate', async message => {
     const target = message.mentions.users.first() || message.author;
     const avEmbed = new EmbedBuilder()
       .setColor('#5865F2')
-      .setTitle(`🖼️ ${target.username}'s Avatar`)
+      .setTitle(`<a:warning:1570699409123971126> ${target.username}'s Avatar`)
       .setImage(target.displayAvatarURL({ size: 1024, dynamic: true }));
     return message.reply({ embeds: [avEmbed] }).catch(() => {});
   }
@@ -298,12 +262,12 @@ client.on('messageCreate', async message => {
   // 🔊 .vc Command (Admin Only)
   if (command === 'vc') {
     if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-      return message.reply('❌ You need **Administrator** permissions to use `.vc`!').catch(() => {});
+      return message.reply('<a:warning:1570699409123971126> You need **Administrator** permissions to use `.vc`!').catch(() => {});
     }
 
     const channel = message.member?.voice.channel;
     if (!channel) {
-      return message.reply('❌ You need to be in a voice channel first to use `.vc`!').catch(() => {});
+      return message.reply('<a:warning:1570699409123971126> You need to be in a voice channel first to use `.vc`!').catch(() => {});
     }
 
     try {
@@ -315,22 +279,22 @@ client.on('messageCreate', async message => {
       });
       const vcEmbed = new EmbedBuilder()
         .setColor('#00FF00')
-        .setDescription(`🔊 Successfully joined **${channel.name}** and staying connected 24/7!`);
+        .setDescription(`<a:warning:1570699409123971126> Successfully joined **${channel.name}** and staying connected 24/7!`);
       return message.reply({ embeds: [vcEmbed] }).catch(() => {});
     } catch (err) {
-      return message.reply('❌ Failed to join the voice channel.').catch(() => {});
+      return message.reply('<a:warning:1570699409123971126> Failed to join the voice channel.').catch(() => {});
     }
   }
 
   // ⏱️ .t Command (Admin Only Timeout + DM)
   if (command === 't') {
     if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-      return message.reply('❌ You need **Administrator** permissions to use `.t`!').catch(() => {});
+      return message.reply('<a:warning:1570699409123971126> You need **Administrator** permissions to use `.t`!').catch(() => {});
     }
 
     const target = message.mentions.members.first();
     if (!target) {
-      return message.reply('❌ Please mention a user to timeout! Usage: `.t @user [minutes] [reason]`').catch(() => {});
+      return message.reply('<a:warning:1570699409123971126> Please mention a user to timeout! Usage: `.t @user [minutes] [reason]`').catch(() => {});
     }
 
     const durationMinutes = parseInt(args[1]) || 10;
@@ -344,34 +308,34 @@ client.on('messageCreate', async message => {
       try {
         const dmEmbed = new EmbedBuilder()
           .setColor('#FF0000')
-          .setTitle(`🚨 Moderation Notice - ${message.guild.name}`)
+          .setTitle(`<a:warning:1570699409123971126> Moderation Notice - ${message.guild.name}`)
           .setDescription(`You have been timed out for **${durationMinutes} minutes**.\n\n**Reason:** ${reason}`);
         await target.send({ embeds: [dmEmbed] });
       } catch (e) {}
 
       const successEmbed = new EmbedBuilder()
         .setColor('#00FF00')
-        .setDescription(`✅ Successfully timed out **${target.user.tag}** for ${durationMinutes} minutes.\n**Reason:** ${reason}`);
+        .setDescription(`<a:warning:1570699409123971126> Successfully timed out **${target.user.tag}** for ${durationMinutes} minutes.\n**Reason:** ${reason}`);
       return message.reply({ embeds: [successEmbed] });
     } catch (err) {
-      return message.reply('❌ Failed to timeout user. Make sure my role is higher than theirs!').catch(() => {});
+      return message.reply('<a:warning:1570699409123971126> Failed to timeout user. Make sure my role is higher than theirs!').catch(() => {});
     }
   }
 
-  // 📊 New Feature 1: .poll [question]
+  // 📊 .poll Command
   if (command === 'poll') {
     const question = args.join(' ');
     if (!question) {
-      return message.reply('❌ Please provide a question for the poll! Usage: `.poll [your question]`').catch(() => {});
+      return message.reply('<a:warning:1570699409123971126> Please provide a question for the poll! Usage: `.poll [your question]`').catch(() => {});
     }
     const pollEmbed = new EmbedBuilder()
       .setColor('#5865F2')
-      .setTitle('📊 Server Poll')
+      .setTitle('<a:warning:1570699409123971126> Server Poll')
       .setDescription(question)
       .setFooter({ text: `Poll created by ${message.author.tag}` })
       .setTimestamp();
     
-    const pollMsg = += await message.channel.send({ embeds: [pollEmbed] }).catch(() => {});
+    const pollMsg = await message.channel.send({ embeds: [pollEmbed] }).catch(() => {});
     if (pollMsg) {
       await pollMsg.react('👍');
       await pollMsg.react('👎');
@@ -379,15 +343,15 @@ client.on('messageCreate', async message => {
     return;
   }
 
-  // 🎯 New Feature 2: .snipe
+  // 🎯 .snipe Command
   if (command === 'snipe') {
     const sniped = snipedMessages.get(message.channel.id);
     if (!sniped) {
-      return message.reply('❌ There are no recently deleted messages to snipe in this channel!').catch(() => {});
+      return message.reply('<a:warning:1570699409123971126> There are no recently deleted messages to snipe in this channel!').catch(() => {});
     }
     const snipeEmbed = new EmbedBuilder()
       .setColor('#5865F2')
-      .setTitle('🎯 Sniped Message')
+      .setTitle('<a:warning:1570699409123971126> Sniped Message')
       .setDescription(`**Author:** ${sniped.author}\n**Message:** ${sniped.content || '*(No text, attachment/image only)*'}`)
       .setTimestamp(sniped.time);
     
@@ -397,12 +361,12 @@ client.on('messageCreate', async message => {
     return message.reply({ embeds: [snipeEmbed] }).catch(() => {});
   }
 
-  // 🏰 New Feature 3: .serverinfo
+  // 🏰 .serverinfo Command
   if (command === 'serverinfo') {
     const { guild } = message;
     const serverEmbed = new EmbedBuilder()
       .setColor('#5865F2')
-      .setTitle(`🏰 Server Information: ${guild.name}`)
+      .setTitle(`<a:warning:1570699409123971126> Server Information: ${guild.name}`)
       .setThumbnail(guild.iconURL({ dynamic: true }))
       .addFields(
         { name: '👑 Owner', value: `<@${guild.ownerId}>`, inline: true },
